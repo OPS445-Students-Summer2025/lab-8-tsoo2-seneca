@@ -1,0 +1,48 @@
+---
+- name: Configure OPS445 VM
+  hosts: vmlab
+  user: student
+  become: yes
+  vars:
+    ssh_pub_key: "{{ lookup('file', '/home/tsoo2/.ssh/id_rsa.pub') }}"
+  tasks:
+    - name: Ensure EPEL repo is installed
+      yum:
+        name: epel-release
+        state: present
+
+    - name: Ensure Apache (httpd) is installed and up-to-date
+      yum:
+        name: httpd
+        state: latest
+
+    - name: Remove 'tree' package
+      yum:
+        name: tree
+        state: absent
+
+    - name: Set hostname to Seneca ID
+      hostname:
+        name: tsoo2
+
+    - name: Create a new user with sudo access
+      user:
+        name: tsoo2
+        shell: /bin/bash
+        groups: wheel
+        append: yes
+        state: present
+
+    - name: Set up SSH key for new user
+      authorized_key:
+        user: tsoo2
+        key: "{{ ssh_pub_key }}"
+
+    - name: Create lab directories
+      file:
+        path: "/home/tsoo2/ops445/lab{{ item }}"
+        state: directory
+        owner: tsoo2
+        group: tsoo2
+        mode: '0755'
+      loop: "{{ range(1, 9) | list }}"
